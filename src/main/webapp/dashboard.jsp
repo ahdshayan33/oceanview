@@ -50,7 +50,7 @@
                     <span class="nav-icon">👥</span>
                     Guest Management
                 </a>
-                <a href="roomStatus.jsp" class="nav-item">
+                <a href="room-status" class="nav-item">
                     <span class="nav-icon">🚪</span>
                     Room Status
                 </a>
@@ -170,7 +170,7 @@
                         <span class="menu-badge">New</span>
                     </a>
                     
-                    <a href="roomStatus.jsp" class="menu-card rooms">
+                    <a href="room-status" class="menu-card rooms">
                         <div class="menu-icon-wrapper">🚪</div>
                         <h4 class="menu-title">Room Status</h4>
                         <p class="menu-description">Check room availability and housekeeping status</p>
