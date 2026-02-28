@@ -159,10 +159,90 @@ public class ReservationDAO {
         }
     }
     
-    // Get reservation by ID with full details
+    // ==================== VIEW RESERVATIONS METHODS ====================
+    
+    // Get all reservations with guest and room details
+    public List<Reservation> getAllReservations() {
+        List<Reservation> reservations = new ArrayList<>();
+        String sql = "SELECT r.*, g.full_name, g.phone, g.email, rm.room_number, rm.room_type, rm.floor_number " +
+                     "FROM reservations_new r " +
+                     "JOIN guests g ON r.guest_nic = g.nic " +
+                     "JOIN rooms rm ON r.room_id = rm.room_id " +
+                     "ORDER BY r.created_at DESC";
+        
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            
+            while (rs.next()) {
+                reservations.add(extractReservationWithDetails(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return reservations;
+    }
+    
+    // Search reservations with filters
+    public List<Reservation> searchReservations(String search, String status, String dateFrom, String dateTo) {
+        List<Reservation> reservations = new ArrayList<>();
+        StringBuilder sql = new StringBuilder(
+            "SELECT r.*, g.full_name, g.phone, g.email, rm.room_number, rm.room_type, rm.floor_number " +
+            "FROM reservations_new r " +
+            "JOIN guests g ON r.guest_nic = g.nic " +
+            "JOIN rooms rm ON r.room_id = rm.room_id WHERE 1=1 "
+        );
+        
+        List<Object> params = new ArrayList<>();
+        
+        if (search != null && !search.trim().isEmpty()) {
+            sql.append("AND (g.full_name LIKE ? OR g.nic LIKE ? OR rm.room_number LIKE ? OR r.reservation_id LIKE ?) ");
+            String searchPattern = "%" + search + "%";
+            params.add(searchPattern);
+            params.add(searchPattern);
+            params.add(searchPattern);
+            params.add(searchPattern);
+        }
+        
+        if (status != null && !status.isEmpty()) {
+            sql.append("AND r.status = ? ");
+            params.add(status);
+        }
+        
+        if (dateFrom != null && !dateFrom.isEmpty()) {
+            sql.append("AND r.check_in_date >= ? ");
+            params.add(dateFrom);
+        }
+        
+        if (dateTo != null && !dateTo.isEmpty()) {
+            sql.append("AND r.check_out_date <= ? ");
+            params.add(dateTo);
+        }
+        
+        sql.append("ORDER BY r.created_at DESC");
+        
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
+            
+            for (int i = 0; i < params.size(); i++) {
+                stmt.setObject(i + 1, params.get(i));
+            }
+            
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                reservations.add(extractReservationWithDetails(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return reservations;
+    }
+    
+    // Get single reservation by ID with full details
     public Reservation getReservationById(int reservationId) {
-        Reservation reservation = null;
-        String sql = "SELECT r.*, g.*, rm.* FROM reservations_new r " +
+        String sql = "SELECT r.*, g.full_name, g.phone, g.email, g.address, " +
+                     "rm.room_number, rm.room_type, rm.floor_number, rm.base_price " +
+                     "FROM reservations_new r " +
                      "JOIN guests g ON r.guest_nic = g.nic " +
                      "JOIN rooms rm ON r.room_id = rm.room_id " +
                      "WHERE r.reservation_id = ?";
@@ -174,30 +254,65 @@ public class ReservationDAO {
             ResultSet rs = stmt.executeQuery();
             
             if (rs.next()) {
-                reservation = extractReservationFromResultSet(rs);
-                
-                Guest guest = new Guest();
-                guest.setNic(rs.getString("g.nic"));
-                guest.setFullName(rs.getString("g.full_name"));
-                guest.setEmail(rs.getString("g.email"));
-                guest.setPhone(rs.getString("g.phone"));
-                reservation.setGuest(guest);
-                
-                Room room = new Room();
-                room.setRoomId(rs.getInt("rm.room_id"));
-                room.setRoomNumber(rs.getString("rm.room_number"));
-                room.setFloorNumber(rs.getInt("rm.floor_number"));
-                room.setRoomType(rs.getString("rm.room_type"));
-                room.setBasePrice(rs.getDouble("rm.base_price"));
-                reservation.setRoom(room);
+                return extractReservationWithDetails(rs);
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return reservation;
+        return null;
     }
     
-    // Get all active reservations
+    // Cancel reservation
+    public boolean cancelReservation(int reservationId) {
+        Connection conn = null;
+        try {
+            conn = DBConnection.getConnection();
+            conn.setAutoCommit(false);
+            
+            // Get room ID
+            String getRoomSql = "SELECT room_id FROM reservations_new WHERE reservation_id = ?";
+            int roomId = 0;
+            try (PreparedStatement stmt = conn.prepareStatement(getRoomSql)) {
+                stmt.setInt(1, reservationId);
+                ResultSet rs = stmt.executeQuery();
+                if (rs.next()) {
+                    roomId = rs.getInt("room_id");
+                }
+            }
+            
+            // Update reservation status
+            String updateResSql = "UPDATE reservations_new SET status = 'CANCELLED' WHERE reservation_id = ?";
+            try (PreparedStatement stmt = conn.prepareStatement(updateResSql)) {
+                stmt.setInt(1, reservationId);
+                stmt.executeUpdate();
+            }
+            
+            // Free up the room
+            String updateRoomSql = "UPDATE rooms SET status = 'VACANT' WHERE room_id = ?";
+            try (PreparedStatement stmt = conn.prepareStatement(updateRoomSql)) {
+                stmt.setInt(1, roomId);
+                stmt.executeUpdate();
+            }
+            
+            conn.commit();
+            return true;
+            
+        } catch (SQLException e) {
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ex) { ex.printStackTrace(); }
+            }
+            e.printStackTrace();
+            return false;
+        } finally {
+            if (conn != null) {
+                try { conn.setAutoCommit(true); conn.close(); } catch (SQLException e) { e.printStackTrace(); }
+            }
+        }
+    }
+    
+    // ==================== EXISTING METHODS ====================
+    
+    // Get all active reservations (for dashboard)
     public List<Reservation> getActiveReservations() {
         List<Reservation> reservations = new ArrayList<>();
         String sql = "SELECT r.*, g.full_name, g.phone, rm.room_number, rm.room_type " +
@@ -286,7 +401,10 @@ public class ReservationDAO {
         }
     }
     
-    private Reservation extractReservationFromResultSet(ResultSet rs) throws SQLException {
+    // ==================== HELPER METHODS ====================
+    
+    // Helper method to extract reservation with guest and room details
+    private Reservation extractReservationWithDetails(ResultSet rs) throws SQLException {
         Reservation reservation = new Reservation();
         reservation.setReservationId(rs.getInt("reservation_id"));
         reservation.setGuestNic(rs.getString("guest_nic"));
@@ -301,6 +419,33 @@ public class ReservationDAO {
         reservation.setCreatedBy(rs.getString("created_by"));
         reservation.setCreatedAt(rs.getTimestamp("created_at"));
         reservation.setUpdatedAt(rs.getTimestamp("updated_at"));
+        
+        // Populate guest
+        Guest guest = new Guest();
+        guest.setNic(reservation.getGuestNic());
+        guest.setFullName(rs.getString("full_name"));
+        guest.setPhone(rs.getString("phone"));
+        guest.setEmail(rs.getString("email"));
+        try {
+            guest.setAddress(rs.getString("address"));
+        } catch (SQLException e) {
+            // Column might not exist in all queries
+        }
+        reservation.setGuest(guest);
+        
+        // Populate room
+        Room room = new Room();
+        room.setRoomId(reservation.getRoomId());
+        room.setRoomNumber(rs.getString("room_number"));
+        room.setRoomType(rs.getString("room_type"));
+        room.setFloorNumber(rs.getInt("floor_number"));
+        try {
+            room.setBasePrice(rs.getDouble("base_price"));
+        } catch (SQLException e) {
+            // Column might not exist in all queries
+        }
+        reservation.setRoom(room);
+        
         return reservation;
     }
 }

@@ -34,11 +34,12 @@
                     <span class="nav-icon">📊</span>
                     Dashboard
                 </a>
-                <a href="add-reservation-step1.jsp" class="nav-item">
+                <a href="add-reservation" class="nav-item">
                     <span class="nav-icon">➕</span>
                     Add Reservation
                 </a>
-                <a href="viewReservation.jsp" class="nav-item">
+                <!-- FIXED: Changed from viewReservation.jsp to view-reservations -->
+                <a href="view-reservations" class="nav-item">
                     <span class="nav-icon">📋</span>
                     View Reservations
                 </a>
@@ -151,13 +152,14 @@
                 </div>
                 
                 <div class="menu-grid">
-                    <a href="add-reservation-step1.jsp" class="menu-card add">
+                    <a href="add-reservation" class="menu-card add">
                         <div class="menu-icon-wrapper">➕</div>
                         <h4 class="menu-title">Add Reservation</h4>
                         <p class="menu-description">Create a new booking for walk-in or phone reservations</p>
                     </a>
                     
-                    <a href="viewReservation.jsp" class="menu-card view">
+                    <!-- FIXED: Changed from viewReservation.jsp to view-reservations -->
+                    <a href="view-reservations" class="menu-card view">
                         <div class="menu-icon-wrapper">📋</div>
                         <h4 class="menu-title">View Reservations</h4>
                         <p class="menu-description">Manage existing bookings and check reservation details</p>
