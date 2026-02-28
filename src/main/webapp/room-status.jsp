@@ -823,7 +823,7 @@
             
             <div class="nav-section">
                 <div class="nav-section-title">Management</div>
-                <a href="guestManagement.jsp" class="nav-item">
+                <a href="guest-management.jsp" class="nav-item">
                     <span style="width: 20px;">👥</span>
                     Guest Management
                 </a>

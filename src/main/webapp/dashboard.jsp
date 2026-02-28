@@ -46,7 +46,7 @@
             
             <div class="nav-section">
                 <div class="nav-section-title">Management</div>
-                <a href="guestManagement.jsp" class="nav-item">
+                <a href="guest-management.jsp" class="nav-item">
                     <span class="nav-icon">👥</span>
                     Guest Management
                 </a>
@@ -163,7 +163,7 @@
                         <p class="menu-description">Manage existing bookings and check reservation details</p>
                     </a>
                     
-                    <a href="guestManagement.jsp" class="menu-card guests">
+                    <a href="guest-management.jsp" class="menu-card guests">
                         <div class="menu-icon-wrapper">👥</div>
                         <h4 class="menu-title">Guest Management</h4>
                         <p class="menu-description">View guest profiles, preferences, and stay history</p>
