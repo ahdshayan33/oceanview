@@ -21,4 +21,6 @@ jobs:
         distribution: 'temurin'
 
     - name: Compile Java
-      run: javac src/**/*.java
+      run: |
+        mkdir -p bin
+        javac -d bin $(find src/main/java -name "*.java")
