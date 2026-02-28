@@ -34,7 +34,7 @@
                     <span class="nav-icon">📊</span>
                     Dashboard
                 </a>
-                <a href="addReservation.jsp" class="nav-item">
+                <a href="add-reservation-step1.jsp" class="nav-item">
                     <span class="nav-icon">➕</span>
                     Add Reservation
                 </a>
@@ -151,7 +151,7 @@
                 </div>
                 
                 <div class="menu-grid">
-                    <a href="addReservation.jsp" class="menu-card add">
+                    <a href="add-reservation-step1.jsp" class="menu-card add">
                         <div class="menu-icon-wrapper">➕</div>
                         <h4 class="menu-title">Add Reservation</h4>
                         <p class="menu-description">Create a new booking for walk-in or phone reservations</p>
